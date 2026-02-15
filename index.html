@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Safety Clearance Headroom Calculator MR/MRL (ES1/ES5/ES5.0)</title>
+
+    <style>
+        :root {
+            --schindler-red: #E2001A;
+            --schindler-dark: #333333;
+            --schindler-gray: #F4F4F4;
+            --schindler-border: #D1D1D1;
+            --focus-blue: #007bff;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --button-blue: #0056b3;
+            --manual-green: #27ae60;
+        }
+
+        .sticky-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: var(--schindler-red);
+            color: white;
+            text-align: center;
+            padding: 10px 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        .sticky-header h1 { margin: 0; font-size: 1.2rem; text-transform: uppercase; }
+        .sticky-header small { display: block; font-size: 0.8rem; opacity: 0.9; margin-bottom: 2px; }
+
+        /* ปรับแต่งปุ่มคู่มือขนาดเล็กใน Header */
+        .header-manual-link {
+            font-size: 0.75rem;
+            color: #fff;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 2px 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            display: inline-block;
+            margin-top: 3px;
+            transition: background 0.2s;
+            text-decoration: none;
+        }
+        .header-manual-link:hover {
+            background: rgba(255, 255, 255, 0.4);
+            text-decoration: none;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--schindler-gray);
+            color: var(--schindler-dark);
+            margin: 0;
+            padding: 20px;
+            padding-top: 100px; /* เพิ่มพื้นที่ด้านบนเผื่อ Header */
+            padding-bottom: 40px; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            width: 100%;
+            max-width: 550px;
+            box-sizing: border-box;
+            border: 1px solid #eee;
+        }
+
+        h2.red-title { 
+            color: var(--schindler-red) !important; 
+            margin-top: 0; 
+            font-size: 1.2rem; 
+            border-left: 5px solid var(--schindler-red);
+            padding-left: 12px;
+        }
+
+        label { display: block; margin-top: 15px; font-weight: bold; color: #555; font-size: 0.9rem; }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            margin-top: 8px;
+            border-radius: 8px;
+            border: 1px solid var(--schindler-border);
+            font-size: 16px;
+            box-sizing: border-box;
+            transition: all 0.2s;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--focus-blue);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+        }
+
+        input[readonly] { background-color: #f9f9f9; color: var(--schindler-red); font-weight: bold; }
+        input.fail { background-color: #ffcccc !important; border: 2px solid var(--danger) !important; }
+
+        /* Style สำหรับคำแนะนำสีฟ้า */
+        .input-hint {
+            display: block;
+            margin-top: 5px;
+            font-size: 0.85rem;
+            color: var(--button-blue);
+            font-style: italic;
+        }
+
+        .resultBox {
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            color: white;
+            font-size: 16px;
+            text-align: center;
+            font-weight: bold;
+            line-height: 1.4;
+        }
+
+        .pass { background: var(--success); }
+        .fail-bg { background: var(--danger); }
+
+        .layoutImg {
+            width: 100%;
+            border-radius: 12px;
+            margin-top: 15px;
+            display: none;
+            border: 1px solid #eee;
+        }
+
+        .calc-btn {
+            width: 100%;
+            max-width: 550px;
+            padding: 18px;
+            background: var(--button-blue);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 10px rgba(0, 86, 179, 0.3);
+            transition: transform 0.1s;
+        }
+        .calc-btn:active { transform: scale(0.98); }
+
+        /* ปรับปรุงดีไซน์กล่องแสดงสูตร (Formula) */
+        #formula {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 16px;
+            color: #333;
+            border: 1px solid #ddd;
+            border-left: 5px solid var(--schindler-red);
+            margin-top: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            line-height: 1.6;
+        }
+
+        .formula-highlight {
+            color: var(--schindler-red);
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        #analysisCard {
+            display: none;
+            border: 2px solid var(--danger);
+            background: #fffafa;
+        }
+
+        .suggestion-box {
+            background: #fff;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            border: 1px solid #eee;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+        .analysis-item {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 5px solid #ccc;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .item-pass { border-left-color: var(--success); }
+        .item-fail { border-left-color: var(--danger); }
+
+        .sub-method {
+            margin-top: 8px;
+            margin-left: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 3px solid #007bff;
+            font-size: 0.95em;
+        }
+        
+        .result-highlight {
+            font-weight: bold;
+            color: #0056b3;
+        }
+
+        /* Footer Counter */
+        .footer-counter {
+            width: 100%;
+            max-width: 550px; 
+            margin-top: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: flex-end; 
+            align-items: center;
+            gap: 6px;
+            font-family: sans-serif;
+            opacity: 0.6; 
+        }
+        
+        .footer-counter .icon {
+            font-size: 14px;
+        }
+        
+        .footer-counter .count {
+            font-size: 13px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: white;
+            padding: 0;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+            overflow: hidden;
+            border: 2px solid var(--schindler-red);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .modal-header { padding: 15px; font-size: 1.2rem; font-weight: bold; color: white; background: var(--schindler-red); }
+        .modal-body { 
+            padding: 25px; 
+            font-size: 1rem; 
+            color: #333; 
+            text-align: left; 
+            overflow-y: auto; 
+        }
+        .modal-footer { padding: 15px; background: #f4f4f4; text-align: center; }
+        .modal-btn { background: var(--schindler-dark); color: white; border: none; padding: 10px 40px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        
+        .manual-list { padding-left: 20px; margin: 0; }
+        .manual-list li { margin-bottom: 10px; }
+        .manual-step { font-weight: bold; color: var(--schindler-red); }
+    </style>
+</head>
+
+<body>
+    <div class="sticky-header">
+        <h1>Safety Clearance Headroom</h1>
+        <small>(ES1 / ES5.0 / ES5 Rel. 02 EN 81-1)</small>
+        <!-- ปุ่มคู่มือขนาดเล็ก -->
+        <span class="header-manual-link" onclick="openManualModal()">📖 คู่มือการใช้งาน</span>
+    </div>
+
+    <!-- Modal แจ้งเตือนผลลัพธ์ -->
+    <div id="customAlert" class="modal-overlay">
+        <div class="modal-content">
+            <div id="modalHeader" class="modal-header">แจ้งเตือน</div>
+            <div id="modalBody" class="modal-body"></div>
+            <div class="modal-footer">
+                <button class="modal-btn" onclick="closeModal('customAlert')">ตกลง</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal คู่มือการใช้งาน -->
+    <div id="manualModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header" style="background: var(--manual-green);">📖 คู่มือการใช้งาน</div>
+            <div class="modal-body">
+                <p><strong>ขั้นตอนการใช้งานโปรแกรมคำนวณระยะปลอดภัย:</strong></p>
+                <ol class="manual-list">
+                    <li><span class="manual-step">เลือก VKN:</span> เลือกความเร็วลิฟต์ ระบบจะดึงค่าระยะกระโดด (SKS) ให้โดยอัตโนมัติ</li>
+                    <li><span class="manual-step">ใส่ค่า HPHG:</span> กรอกระยะยุบของบัฟเฟอร์ (ดูคำแนะนำสีฟ้าสำหรับลิฟต์ 1.0 m/s)</li>
+                    <li><span class="manual-step">ใส่ค่า HGP:</span> กรอกระยะรันบายโครงเวทที่วัดได้จริงจากหน้างาน</li>
+                    <li><span class="manual-step">เลือกประเภทลิฟต์:</span> เลือก MR หรือ MRL เพื่อดูรูปประกอบตำแหน่งการวัดระยะ</li>
+                    <li><span class="manual-step">กรอกระยะ X, A, B, D:</span> ดูรูปภาพประกอบแล้ววัดระยะจริงมากรอกในช่องว่าง</li>
+                    <li><span class="manual-step">กดปุ่มคำนวณ:</span> ปุ่มสีฟ้าด้านล่าง</li>
+                </ol>
+                <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
+                <p><strong>การอ่านผลลัพธ์:</strong></p>
+                <ul style="padding-left:20px;">
+                    <li><span style="color:green;">✅ สีเขียว</span> = ผ่านเกณฑ์มาตรฐาน</li>
+                    <li><span style="color:red;">❌ สีแดง</span> = ไม่ผ่านเกณฑ์ (ต้องแก้ไข)</li>
+                </ul>
+                <p><em>*หากผลเป็นสีแดง ระบบจะแสดงวิเคราะห์แนวทางการแก้ไขให้อัตโนมัติที่ด้านล่าง</em></p>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn" style="background: var(--manual-green);" onclick="closeModal('manualModal')">เข้าใจแล้ว</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 1: VKN, SKS, HPHG -->
+    <div class="card">
+        <h2 class="red-title">เลือก VKN เพื่อหาค่า SKS jump</h2>
+        <label>VKN (m/s)</label>
+        <select id="vkn">
+            <option value="">-- เลือกความเร็วลิฟต์ เช่น 1.00 m/s --</option>
+            <option value="0.63">0.63</option>
+            <option value="0.80">0.80</option>
+            <option value="1.00">1.00</option>
+            <option value="1.50">1.50</option>
+            <option value="1.60">1.60</option>
+            <option value="1.75">1.75</option>
+            <option value="2.00">2.00</option>
+            <option value="2.50">2.50</option>
+            <option value="3.00">3.00</option>
+        </select>
+        <label>SKS (mm) - ระยะกระโดด</label>
+        <input id="sks" readonly placeholder="คำนวณอัตโนมัติ">
+
+        <label>HPHG =ระยะยุบของบัฟเฟอร์โครงเวท (mm)</label>
+        <input id="hphg" type="number" placeholder="ดูจากแบบติดตั้งในตารางระบุHPHG">
+        <!-- คำแนะนำสีฟ้า -->
+        <span class="input-hint">*คำแนะนำ: สำหรับลิฟท์ VKN 1.00 m/s จะใช้บัฟเฟอร์ SA PS D1,D2,D3 ระยะ HPHG จะเท่ากับ 72 mm</span>
+    </div>
+
+    <!-- Card 2: HGP -->
+    <div class="card">
+        <h2 class="red-title">ใส่ค่าระยะ HGP (mm)</h2>
+        <label>HGP =ระยะรันบายโครงเวท</label>
+        <input id="hgp" type="number" placeholder="ระยะรันบาโครงเวทที่วัดได้">
+    </div>
+
+    <div class="card">
+        <h2 class="red-title">ประเภทของลิฟต์ MR/MRL</h2>
+        <select id="layoutSelect" onchange="showLayout()">
+            <option value="">--เลือก MR/MRL--</option>
+            <option value="mr">MR Elevator (มีห้องเครื่อง)</option>
+            <option value="mrl">MRL Elevator (ไม่มีห้องเครื่อง)</option>
+        </select>
+        <img id="imgMR" class="layoutImg" src="image/layout-mr.jpeg" alt="MR Layout">
+        <img id="imgMRL" class="layoutImg" src="image/layout-mrl.jpeg" alt="MRL Layout">
+    </div>
+
+    <div class="card">
+        <h2 class="red-title">วัดระยะ X A B D จากรูปที่แสดงด้านบน (รูปซูมดูได้) </h2>
+        <label>X =ระยะลิฟต์จอดต่ำกว่าชั้นบนสุด วัดระยะต่างระดับจากซิลประตูในถึงซิลประตูนอก (mm)</label>
+        <input id="x" type="number" placeholder="ค่าไม่เท่ากับ0ลิฟต์ไม่Normalเสมอชั้น">
+        
+        <label>A =ระยะจากพื้นหลังคาลิฟต์ วัดถึงเพดานปล่องหรือส่วนที่ยื่นลงมาหรือฮุคที่จะชนหลังคา (mm)</label>
+        <input id="a" type="number">
+
+        <label>B =ระยะจากราวกันตก วัดถึงบริเวณที่ราวกันตกจะขึ้นไปชน (เพดานปล่องหรือส่วนที่ยื่นลงมาหรือฮุค) (mm)</label>
+        <input id="b" type="number">
+
+        <label>D ระยะจาก Guide shoe หรือ Roller วัดถึงปลายรางลิฟต์(mm)</label>
+        <input id="d" type="number">
+    </div>
+
+    <button class="calc-btn" onclick="calculate(true)">กดปุ่มนี้เพื่อคำนวณระยะ</button>
+
+    <div class="card">
+        <h2>ผลการคำนวณระยะปลอดภัย</h2>
+        <div id="resA"></div>
+        <div id="resB"></div>
+        <div id="resD"></div>
+        <div id="resAll"></div>
+        <!-- กล่องสูตร -->
+        <div id="formula"></div>
+    </div>
+
+    <div id="analysisCard" class="card">
+        <h2 style="color: var(--danger);">วิเคราะห์แนวทางการแก้ไข</h2>
+        <label>1. วัดระยะส่วนที่ยื่นลงมาจากเพดานปล่อง (Hook / Beam) (mm)</label>
+        <input id="hookDepth" type="number" value="0" placeholder="ถ้าชนเพดานใส่ 0" oninput="calculate(false)">
+        
+        <label>2. ระยะ HGP ระยะรันบายโครงเวทน้อยที่สุดในแบบระบุ (Min HGP)</label>
+        <input id="hgpMin" type="number" placeholder="ใส่ค่าHGPน้อยที่สุดในแบบระบุ" oninput="calculate(false)">
+        
+        <label>3. ระยะ HGP ระยะรันบายโครงเวทมากที่สุดในแบบระบุ (Max HGP)</label>
+        <input id="hgpMax" type="number" placeholder="ระบุค่าHGPมากที่สุดในแบบระบุ" oninput="calculate(false)">
+
+        <div id="suggestionArea" class="suggestion-box"></div>
+    </div>
+
+    <!-- ส่วน Footer Counter -->
+    <div class="footer-counter">
+        <span class="icon">👁️</span>
+        <span id="visitCount" class="count">...</span>
+    </div>
+
+    <script>
+        const sksTable = {
+            "0.63": 14, "0.80": 23, "1.00": 35, "1.50": 79, "1.60": 90,
+            "1.75": 108, "2.00": 140, "2.50": 219, "3.00": 315
+        };
+
+        function showLayout() {
+            const layout = document.getElementById("layoutSelect").value;
+            document.getElementById("imgMR").style.display = (layout === "mr") ? "block" : "none";
+            document.getElementById("imgMRL").style.display = (layout === "mrl") ? "block" : "none";
+        }
+
+        // ฟังก์ชันเปิด Modal คู่มือ
+        function openManualModal() {
+            document.getElementById("manualModal").style.display = "flex";
+        }
+
+        // ฟังก์ชันปิด Modal (ใช้ร่วมกันได้โดยส่ง ID มา)
+        function closeModal(modalId) {
+            if(modalId) {
+                document.getElementById(modalId).style.display = "none";
+            } else {
+                // กรณีปิด Default
+                document.getElementById("customAlert").style.display = "none";
+            }
+        }
+        
+        // ปิด Modal เมื่อคลิกพื้นที่ว่างข้างนอก
+        window.onclick = function(event) {
+            const manualModal = document.getElementById("manualModal");
+            const alertModal = document.getElementById("customAlert");
+            if (event.target == manualModal) {
+                manualModal.style.display = "none";
+            }
+            if (event.target == alertModal) {
+                alertModal.style.display = "none";
+            }
+        }
+
+        function calculate(showPop) {
+            const vknValue = document.getElementById("vkn").value;
+            if (vknValue === "" && showPop) {
+                alert("กรุณาเลือก VKN ก่อนคำนวณ");
+                return;
+            }
+            
+            const SKS = sksTable[vknValue] || 0;
+            document.getElementById("sks").value = SKS;
+
+            const HGP = parseFloat(document.getElementById("hgp").value) || 0;
+            const HPHG = parseFloat(document.getElementById("hphg").value) || 0;
+            const X = parseFloat(document.getElementById("x").value) || 0;
+            const A = parseFloat(document.getElementById("a").value) || 0;
+            const B = parseFloat(document.getElementById("b").value) || 0;
+            const D = parseFloat(document.getElementById("d").value) || 0;
+            
+            const layoutType = document.getElementById("layoutSelect").value;
+
+            const Y = SKS + HGP + HPHG + X;
+            const Ay = A - Y;
+            const By = B - Y;
+            const Dy = D - Y;
+
+            updateResult("resA", Ay, 1000, "A-Y");
+            updateResult("resB", By, 300, "B-Y");
+            updateResult("resD", Dy, 100, "D-Y");
+
+            const overall = Ay >= 1000 && By >= 300 && Dy >= 100;
+            const resAll = document.getElementById("resAll");
+            resAll.className = overall ? "resultBox pass" : "resultBox fail-bg";
+            resAll.innerHTML = `Overall : ${overall ? "ผ่าน ✔" : "ไม่ผ่าน ✖"}`;
+
+            // ปรับปรุงการแสดงผลในกล่อง Formula
+            document.getElementById("formula").innerHTML = 
+                `<strong>สูตรคำนวณระยะ Y:</strong><br> Y = SKS + HGP + HPHG + X<br>` +
+                `Y = ${SKS} + ${HGP} + ${HPHG} + ${X} = <span class="formula-highlight">${Y} mm</span>`;
+            
+            document.getElementById("a").className = Ay < 1000 ? "fail" : "";
+            document.getElementById("b").className = By < 300 ? "fail" : "";
+            document.getElementById("d").className = Dy < 100 ? "fail" : "";
+
+            if (showPop) {
+                const modal = document.getElementById("customAlert");
+                const header = document.getElementById("modalHeader");
+                const body = document.getElementById("modalBody");
+                
+                if (overall) {
+                    header.style.background = "#2ecc71";
+                    header.innerHTML = "✅ ผ่าน pass";
+                    body.innerHTML = "ผลการตรวจสอบ: ผ่านเกณฑ์ความปลอดภัยทั้งหมด";
+                } else {
+                    header.style.background = "#E2001A";
+                    header.innerHTML = "❌ ไม่ผ่าน fail";
+                    let msg = "";
+                    if (Ay < 1000) msg += `• ระยะ A (Headroom): ต้องการอีก ${Math.abs(Ay - 1000)} mm<br>`;
+                    if (By < 300) msg += `• ระยะ B (ราวกันตก): ต้องการอีก ${Math.abs(By - 300)} mm<br>`;
+                    if (Dy < 100) msg += `• ระยะ D (ปลายราง): ต้องการอีก ${Math.abs(Dy - 100)} mm<br>`;
+                    body.innerHTML = msg;
+                }
+                modal.style.display = "flex";
+            }
+
+            const analysisCard = document.getElementById("analysisCard");
+            if (!overall && vknValue !== "") {
+                analysisCard.style.display = "block";
+                runAnalysis(Ay, By, Dy, HGP, Y, layoutType);
+            } else {
+                analysisCard.style.display = "none";
+            }
+        }
+
+        function runAnalysis(Ay, By, Dy, currentHGP, Y, layoutType) {
+            const hook = parseFloat(document.getElementById("hookDepth").value) || 0;
+            const hgpMin = parseFloat(document.getElementById("hgpMin").value) || 0;
+            const suggestionArea = document.getElementById("suggestionArea");
+            
+            let html = "<div style='border-bottom: 2px solid #ddd; padding-bottom: 10px; margin-bottom: 15px;'>";
+            html += "<strong style='font-size: 16px; color: #E2001A;'>💡 รายงานวิเคราะห์แนวทางแก้ไขปัญหาเชิงลึก:</strong><br>";
+            html += `<span style='font-size: 14px;'>ค่าระยะสะสมทางดิ่ง (Total Cumulative Vertical Distance - Y) ตอนนี้ของคุณคือ <b>${Y} mm</b></span></div>`;
+            
+            const canReduceHGP = (hgpMin > 0 && currentHGP > hgpMin);
+            const reducibleAmount = canReduceHGP ? (currentHGP - hgpMin) : 0;
+
+            // --- 1. พื้นที่ปลอดภัยบนหลังคา (Safety Clearance Area) ---
+            html += `<div class="analysis-item ${Ay >= 1000 ? 'item-pass' : 'item-fail'}">`;
+            html += "<strong>1. พื้นที่ปลอดภัยบนหลังคาลิฟต์ (Safety Clearance Area - ระยะ A):</strong><br>";
+            
+            if (Ay >= 1000) {
+                html += `✅ <span style="color:green"><b>สถานะ: ผ่านเกณฑ์</b></span> (มีระยะคงเหลือ ${Ay} mm)<br>`;
+            } else {
+                const deficit = 1000 - Ay;
+                html += `❌ <span style="color:red"><b>สถานะ: ไม่ผ่านเกณฑ์ (ต้องการอีก ${deficit} mm)</b></span><br>`;
+                html += `<u><b>แนวทางการแก้ไข:</b></u><br>`;
+
+                // วิธีที่ 1
+                if (canReduceHGP) {
+                    const newAy = Ay + reducibleAmount;
+                    const isEnough = newAy >= 1000;
+                    html += `<div class="sub-method"><b>วิธีที่ 1: ปรับลดระยะรันบายโครงเวท (Counterweight Runby - HGP)</b><br>`;
+                    html += `• ระยะรันบายตอนนี้: <b>${currentHGP} mm</b><br>`;
+                    html += `• ระยะต่ำสุดตามแบบ (Min HGP): <b>${hgpMin} mm</b><br>`;
+                    html += `• <span class="result-highlight">สามารถลดระยะลงได้อีก: ${reducibleAmount} mm</span><br>`;
+                    html += `• ผลลัพธ์: ระยะปลอดภัย A จะเพิ่มขึ้นเป็น <b>${newAy} mm</b><br>`;
+                    html += isEnough 
+                        ? `✅ <b>สรุป: วิธีนี้สามารถแก้ปัญหาได้ (ผ่านเกณฑ์ทันที)</b>` 
+                        : `⚠️ <b>สรุป: วิธีนี้ช่วยเพิ่มระยะได้ แต่ยังต้องการอีก ${1000 - newAy} mm</b>`;
+                    html += `</div>`;
+                } else {
+                    html += `<div class="sub-method" style="background:#fff3cd; border-left-color:#ffc107;">`;
+                    html += `⚠️ <b>วิธีที่ 1:</b> ไม่สามารถลดระยะรันบาย (HGP) ได้แล้ว (ค่าHGPตอนนี้ ได้น้อยที่สุดตามแบบแล้ว)</div>`;
+                }
+
+                // วิธีที่ 2
+                if (hook > 0) {
+                    html += `<div class="sub-method"><b>วิธีที่ 2: ตัดส่วนที่ยื่นลงมาหรือส่วนที่จะชน (Hook/Beam/third party)</b><br>`;
+                    html += `ตัดส่วนที่ยื่นลงมา ตัดออกอีก <b>${hook} mm</b> จะได้ระยะเพิ่มขึ้นโดยตรง</div>`;
+                }
+            }
+            html += "</div>";
+
+            // --- 2. ราวกันตก (Balustrade Clearance) ---
+            html += `<div class="analysis-item ${By >= 300 ? 'item-pass' : 'item-fail'}">`;
+            html += "<strong>2. ระยะห่างของราวกันตก (Balustrade Clearance - ระยะ B):</strong><br>";
+            
+            if (By >= 300) {
+                html += `✅ <span style="color:green"><b>สถานะ: ผ่านเกณฑ์</b></span><br>`;
+            } else {
+                const deficit = 300 - By;
+                html += `❌ <span style="color:red"><b>สถานะ: ไม่ผ่านเกณฑ์ (ต้องการอีก ${deficit} mm)</b></span><br>`;
+                html += `<u><b>แนวทางการแก้ไข:</b></u><br>`;
+                
+                if (canReduceHGP) {
+                    const newBy = By + reducibleAmount;
+                    const isEnough = newBy >= 300;
+                    html += `<div class="sub-method"><b>วิธีที่ 1: ปรับลดระยะรันบายโครงเวท (HGP)</b><br>`;
+                    html += `• ลดระยะ HGP ลงได้สูงสุด <b>${reducibleAmount} mm</b><br>`;
+                    html += `• ผลลัพธ์: ระยะ B จะเพิ่มขึ้นเป็น <b>${newBy} mm</b><br>`;
+                    html += isEnough 
+                        ? `✅ <b>สรุป: ผ่านเกณฑ์ทันที</b>` 
+                        : `⚠️ <b>สรุป: ยังต้องการอีก ${300 - newBy} mm</b>`;
+                    html += `</div>`;
+                }
+                html += `<div class="sub-method"><b>วิธีอื่น ๆ:</b> ตรวจสอบตำแหน่งตะขอ (Hook) หรือพิจารณาใช้ราวกันตกแบบพับได้</div>`;
+            }
+            html += "</div>";
+
+            // --- 3. ปลายราง (Guide Rail Over-travel) ---
+            html += `<div class="analysis-item ${Dy >= 100 ? 'item-pass' : 'item-fail'}">`;
+            html += "<strong>3. ระยะปลายรางลิฟต์ (Guide Rail Over-travel - ระยะ D):</strong><br>";
+            
+            if (Dy >= 100) {
+                html += `✅ <span style="color:green"><b>สถานะ: ผ่านเกณฑ์</b></span><br>`;
+            } else {
+                const deficit = 100 - Dy;
+                html += `❌ <span style="color:red"><b>สถานะ: ไม่ผ่านเกณฑ์ (ต้องการอีก ${deficit} mm)</b></span><br>`;
+                html += `<u><b>แนวทางการแก้ไข:</b></u><br>`;
+
+                if (canReduceHGP) {
+                    const newDy = Dy + reducibleAmount;
+                    const isEnough = newDy >= 100;
+                    html += `<div class="sub-method"><b>วิธีที่ 1: ปรับลดระยะรันบายโครงเวท (HGP)</b><br>`;
+                    html += `• ลดระยะ HGP ลงได้สูงสุด <b>${reducibleAmount} mm</b><br>`;
+                    html += `• ผลลัพธ์: ระยะปลายราง D จะเพิ่มขึ้นเป็น <b>${newDy} mm</b><br>`;
+                    html += isEnough 
+                        ? `✅ <b>สรุป: ผ่านเกณฑ์ทันที (ปลายรางเหลือพอ)</b>` 
+                        : `⚠️ <b>สรุป: ยังต้องการอีก ${100 - newDy} mm</b>`;
+                    html += `</div>`;
+                }
+
+                // เงื่อนไขแยก MR / MRL สำหรับวิธีที่ 2
+                if (layoutType === 'mrl') {
+                    html += `<div class="sub-method" style="background:#fffafa; border-left-color:#dc3545;"><b>วิธีที่ 2: ตรวจสอบการติดตั้ง (สำหรับ MRL)</b><br>`;
+                    html += `สำหรับลิฟต์ MRL <span style="color:red; font-weight:bold;">ไม่แนะนำให้ต่อรางหน้างาน</span> กรุณาตรวจสอบระยะปลายรางจริง เทียบกับแบบติดตั้ง (Installation Drawing) อีกครั้ง ว่ามีการติดตั้งคลาดเคลื่อนหรือไม่ หากระยะไม่ตรงตามแบบ ให้แก้ไขตามมาตรฐานการติดตั้ง</div>`;
+                } else {
+                    html += `<div class="sub-method" style="background:#fffafa; border-left-color:#dc3545;"><b>วิธีที่ 2: การต่อราง (Rail Extension)</b><br>`;
+                    html += `สำหรับลิฟต์ MR หากลด HGP ไม่ได้ หรือลดแล้วไม่พอ <span style="color:red; font-weight:bold;">จำเป็นต้องต่อรางลิฟต์ให้สูงขึ้น</span> อย่างน้อย ${Math.max(0, deficit - reducibleAmount)} mm เพื่อความปลอดภัย</div>`;
+                }
+            }
+            html += "</div>";
+
+            suggestionArea.innerHTML = html;
+        }
+
+        function updateResult(id, val, limit, label) {
+            const el = document.getElementById(id);
+            const isPass = val >= limit;
+            const deficit = limit - val;
+            
+            el.className = isPass ? "resultBox pass" : "resultBox fail-bg";
+            
+            if (isPass) {
+                el.innerHTML = `${label} : ผ่าน ✔ (${val} ต้องการ ≥ ${limit} mm)`;
+            } else {
+                el.innerHTML = `${label} : ไม่ผ่าน ✖ (${val} ต้องการอีก : ${deficit} mm เพื่อให้ได้ ≥ ${limit} mm)`;
+            }
+        }
+
+        // Script นับจำนวน View (CounterAPI)
+        document.addEventListener("DOMContentLoaded", function() {
+            // Namespace และ Key สำหรับเก็บค่า
+            const namespace = 'schindler-safety-calc-tool';
+            const key = 'visits';
+
+            fetch(`https://api.counterapi.dev/v1/${namespace}/${key}/up`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('visitCount').innerText = data.count;
+                })
+                .catch(error => {
+                    console.error('Error fetching count:', error);
+                    document.getElementById('visitCount').innerText = "-";
+                });
+        });
+    </script>
+</body>
+</html>
+
